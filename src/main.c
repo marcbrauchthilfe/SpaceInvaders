@@ -7,12 +7,15 @@
 #include "demos/i2c_scan.h"
 #include "demos/motion.h"
 #include "demos/Abgabe_09.h"
+#include "game/game.h"
 
 int main()
 {
     stdio_init_all();
-    display_draw_menu();
+    game_init();
+
     abgabe_09_execute();
+
     // joystick_demo_execute();
     // leds_demo_execute();
     // dht11_demo_execute();

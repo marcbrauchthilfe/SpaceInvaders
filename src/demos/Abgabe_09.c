@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include <stdio.h>
+#include "game/gamestate.h"
 
 #define LEFT_BUTTON_PIN 15      //left
 #define BOTTOM_BUTTON_PIN 14    //bottom
@@ -45,26 +46,48 @@ void abgabe_09_execute(void)
         if (!left_Button_state)
         {
             printf("left Button is pressed!\n");
-            //led1_demo_execute();
+            switch (get_state())
+            {
+            case GAMESTATE_MENU:
+                // start game
+                break;
+            case GAMESTATE_GAME_OVER:
+                // restart game
+                break;
+            default:
+                break;
+            }
             sleep_ms(200);
         }
         else if (!bottom_Button_state)
         {
             printf("bottom Button is pressed!\n");
-            //led2_demo_execute();
             sleep_ms(200);
         }
         else if (!top_Button_state)
         {
             printf("top Button is pressed!\n");
-            //led3_demo_execute();
+            if (get_state() == GAMESTATE_PLAYING)
+            {
+                // fire bullet
+            }
+            
             sleep_ms(200);
         }
         else if (!right_Button_state)
         {
             printf("right Button is pressed!\n");
-            //led4_demo_execute();
-            sleep_ms(200);
+            switch (get_state())
+            {
+            case  GAMESTATE_MENU:
+                // show controlls 
+                break;
+            case GAMESTATE_GAME_OVER:
+                // back to menu
+                break;
+            default:
+                break;
+            }
         }
         sleep_ms(100);
     }
