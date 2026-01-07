@@ -59,3 +59,39 @@ void display_draw_menu(void)
     st7735_draw_string(10, 20, "< Start Game", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
     st7735_draw_string(10, 40, "> View Controls", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
 }
+
+void display_draw_game_over(void)
+{
+    init_display();
+    st7735_begin();
+
+    // black background
+    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    // draw game over message
+    st7735_draw_string(20, 60, "Game Over!", st7735_rgb(255, 0, 0), st7735_rgb(0, 0, 0));
+}
+
+void display_draw_controls(void)
+{
+    init_display();
+    st7735_begin();
+
+    // black background
+    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    // draw controls information
+    st7735_draw_string(10, 20, "Controls:", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+    st7735_draw_string(10, 40, "Top Button: Shoot", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+    st7735_draw_string(10, 60, "Joystick: Move left or right", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+}
+
+void display_draw_playing(void)
+{
+    init_display();
+    st7735_begin();
+
+    // black background
+    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    
+    // draw playing state (placeholder)
+    st7735_draw_string(10, 20, "Game in Progress...", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+}
