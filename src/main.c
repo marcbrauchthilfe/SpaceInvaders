@@ -11,14 +11,14 @@
 int main()
 {
     stdio_init_all();
-    // display_demo_execute();
+    display_draw_menu();
+
     // joystick_demo_execute();
     // leds_demo_execute();
     // dht11_demo_execute();
     // i2c_scan_demo_execute();
     // motion_demo_execute();
     // distance_demo_execute();
-    printf("Hello, Pico2-Edu!\n");
-    abgabe_09_execute();
+
     return 0;
 }

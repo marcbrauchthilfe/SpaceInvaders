@@ -47,3 +47,15 @@ void display_demo_execute(void)
         sleep_ms(1000);
     }
 }
+
+void display_draw_menu(void)
+{
+    init_display();
+    st7735_begin();
+
+    // black background
+    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    // draw menu options
+    st7735_draw_string(10, 20, "< Start Game", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+    st7735_draw_string(10, 40, "> View Controls", st7735_rgb(255, 255, 255), st7735_rgb(0, 0, 0));
+}
