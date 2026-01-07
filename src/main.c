@@ -12,7 +12,7 @@ int main()
 {
     stdio_init_all();
     display_draw_menu();
-
+    abgabe_09_execute();
     // joystick_demo_execute();
     // leds_demo_execute();
     // dht11_demo_execute();
