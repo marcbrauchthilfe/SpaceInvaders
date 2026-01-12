@@ -7,4 +7,8 @@ typedef enum {
     GAMESTATE_GAME_OVER
 } gamestate_t;
 
-#endif /* GAMESTATE_H */
+void set_state(gamestate_t new_state);
+gamestate_t get_state(void);
+void print_state(void);
+
+#endif

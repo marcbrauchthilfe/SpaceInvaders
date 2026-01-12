@@ -2,5 +2,6 @@
 #define GAME_H
 
 void game_init(void);
+void game_update(int move_dir, int fire);
 
-#endif /* GAME_H */
+#endif

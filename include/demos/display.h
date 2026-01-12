@@ -3,5 +3,6 @@
 
 void display_demo_execute(void);
 void display_draw_menu(void);
+void init_display(void);
 
 #endif /* DISPLAY_DEMO_H */
