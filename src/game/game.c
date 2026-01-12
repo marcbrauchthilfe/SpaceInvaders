@@ -54,9 +54,9 @@ void game_update(int move_dir, int fire)
     // black background
     st7735_fill_screen(st7735_rgb(0, 0, 0));
 
-    st7735_fill_rect(player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(0, 0, 0));
+    st7735_fill_rect(player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(255, 255, 255));
 
     if (bullet_y >= 0) {
-        st7735_fill_rect(bullet_x, bullet_y, 2, 6, st7735_rgb(0, 0, 0));
+        st7735_fill_rect(bullet_x, bullet_y, 2, 6, st7735_rgb(255, 0, 0));
     }
 }
