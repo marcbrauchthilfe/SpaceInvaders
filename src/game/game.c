@@ -4,6 +4,7 @@
 #include "hal/displays/st7735.h"
 #include "pico/time.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define SCREEN_WIDTH 128
 #define PLAYER_Y     150
@@ -13,6 +14,7 @@
 #define ENEMY_COLS 6
 #define MAX_ENEMIES (ENEMY_ROWS * ENEMY_COLS)
 #define MAX_BULLETS 5
+#define MAX_ENEMY_BULLETS 5
 
 /* =======================
    Enemy structure
@@ -22,6 +24,15 @@ typedef struct {
     int y;
     bool alive;
 } Enemy;
+
+/* =======================
+   Enemy Bullet structure
+   ======================= */
+typedef struct {
+    int x;
+    int y;
+    bool active;
+} EnemyBullet;
 
 /* =======================
    Bullet structure
@@ -41,13 +52,17 @@ static int player_x = 60;
 
 /* Shooting */
 static absolute_time_t last_shot_time;
-static uint32_t shot_cooldown_us = 400000;
+static uint32_t shot_cooldown_us = 40000;
 static Bullet bullets[MAX_BULLETS];
 
-/* Enemy movement */
+/* Enemy */
 static int enemy_dir = 1;
 static absolute_time_t last_enemy_move;
 static uint32_t enemy_move_interval = 300000;
+static EnemyBullet enemy_bullets[MAX_ENEMY_BULLETS];
+static absolute_time_t last_enemy_shot;
+static uint32_t enemy_shot_interval_us = 800000; // 0.8s
+
 
 /* =======================
    Game Init
@@ -68,9 +83,12 @@ void game_init(void)
                        st7735_rgb(255, 255, 255),
                        st7735_rgb(0, 0, 0));
 
+    srand(time_us_64()); // Seed mit aktueller Zeit                   
+
     /* Init timers */
     last_shot_time = get_absolute_time();
     last_enemy_move = get_absolute_time();
+
 
     /* Init enemies */
     int index = 0;
@@ -82,6 +100,11 @@ void game_init(void)
             index++;
         }
     }
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+    enemy_bullets[i].active = false;
+    }
+    last_enemy_shot = get_absolute_time();
+
 }
 
 /* =======================
@@ -155,6 +178,33 @@ void game_update(int move_dir, int fire)
         }
     }
 
+    /* -------- Enemy Shooting -------- */
+    if (absolute_time_diff_us(last_enemy_shot, now) >= enemy_shot_interval_us) {
+
+        /* zufälligen lebenden Gegner wählen */
+        int shooter = -1;
+        for (int tries = 0; tries < 10; tries++) {
+            int i = rand() % MAX_ENEMIES;
+            if (enemies[i].alive) {
+                shooter = i;
+                break;
+            }
+        }
+
+        if (shooter >= 0) {
+            for (int b = 0; b < MAX_ENEMY_BULLETS; b++) {
+                if (!enemy_bullets[b].active) {
+                    enemy_bullets[b].x = enemies[shooter].x + 5;
+                    enemy_bullets[b].y = enemies[shooter].y + 6;
+                    enemy_bullets[b].active = true;
+                    last_enemy_shot = now;
+                    break;
+                }
+            }
+        }
+    }
+
+
 
     /* -------- Collision detection -------- */
    for (int b = 0; b < MAX_BULLETS; b++) {
@@ -174,7 +224,32 @@ void game_update(int move_dir, int fire)
             }
         }
     }
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (!enemy_bullets[i].active) continue;
 
+        if (enemy_bullets[i].x >= player_x &&
+            enemy_bullets[i].x <= player_x + PLAYER_WIDTH &&
+            enemy_bullets[i].y >= PLAYER_Y &&
+            enemy_bullets[i].y <= PLAYER_Y + 5) {
+
+            enemy_bullets[i].active = false;
+
+            /* TODO: Leben abziehen / Game Over */
+            set_state(GAMESTATE_GAME_OVER);
+        }
+    }
+
+
+    /* -------- Enemy Bullet movement -------- */
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (!enemy_bullets[i].active) continue;
+
+        enemy_bullets[i].y += 4;
+
+        if (enemy_bullets[i].y > 160) {
+            enemy_bullets[i].active = false;
+        }
+    }
 
     /* -------- Render -------- */
     st7735_fill_screen(st7735_rgb(0, 0, 0));
@@ -195,6 +270,19 @@ void game_update(int move_dir, int fire)
             );
         }
     }
+
+    /* Enemy Bullets */
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (enemy_bullets[i].active) {
+            st7735_fill_rect(
+                enemy_bullets[i].x,
+                enemy_bullets[i].y,
+                2, 6,
+                st7735_rgb(255, 255, 0)
+            );
+        }
+    }
+
 
 
     /* Enemies */
