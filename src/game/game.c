@@ -63,6 +63,8 @@ static EnemyBullet enemy_bullets[MAX_ENEMY_BULLETS];
 static absolute_time_t last_enemy_shot;
 static uint32_t enemy_shot_interval_us = 800000; // 0.8s
 
+/*funktion init*/
+static void draw_game_over_screen(void);
 
 /* =======================
    Game Init
@@ -114,6 +116,14 @@ void game_update(int move_dir, int fire)
 {
     if (get_state() != GAMESTATE_PLAYING)
         return;
+    else if (get_state() == GAMESTATE_GAME_OVER) {
+    draw_game_over_screen();
+        if (move_dir < 0) { // LEFT gedrückt
+                game_init();               // reset Game
+                set_state(GAMESTATE_PLAYING);
+            }
+        return;
+}
 
     absolute_time_t now = get_absolute_time();
 
@@ -140,8 +150,6 @@ void game_update(int move_dir, int fire)
         }
     }
     
-
-
     /* -------- Enemy movement -------- */
     if (absolute_time_diff_us(last_enemy_move, now) >= enemy_move_interval) {
 
@@ -294,4 +302,26 @@ void game_update(int move_dir, int fire)
                              st7735_rgb(0, 255, 0));
         }
     }
+}
+
+/* =======================
+   Draw Game Over Screen
+   ======================= */
+static void draw_game_over_screen(void)
+{
+    st7735_fill_screen(st7735_rgb(0, 0, 0));
+
+    st7735_draw_string(
+        30, 40,
+        "GAME OVER",
+        st7735_rgb(255, 0, 0),
+        st7735_rgb(0, 0, 0)
+    );
+
+    st7735_draw_string(
+        10, 70,
+        "LEFT = RESTART",
+        st7735_rgb(255, 255, 255),
+        st7735_rgb(0, 0, 0)
+    );
 }
