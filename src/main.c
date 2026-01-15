@@ -19,7 +19,7 @@ int main(void)
 }
 
 
-
+    // Weitere Demos zum Ausprobieren:
     // joystick_demo_execute();
     // leds_demo_execute();
     // dht11_demo_execute();

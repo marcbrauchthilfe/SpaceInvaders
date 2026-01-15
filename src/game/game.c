@@ -10,7 +10,8 @@
 #define SCREEN_WIDTH 128
 #define PLAYER_Y     150
 #define PLAYER_WIDTH 10
-#define MAX_BULLETS 50  // Kombiniert: alte Version hatte 50, neue 5 -> 50 für Flexibilität
+#define MAX_BULLETS 50  
+#define FRAME_INTERVAL_US 16666 // ~60 FPS
 
 typedef struct {
     int x, y;
@@ -25,8 +26,10 @@ static Bullet bullets[MAX_BULLETS];
 static absolute_time_t last_shot_time;
 static absolute_time_t last_enemy_move;
 static absolute_time_t last_enemy_shot;
+static absolute_time_t last_frame_time;
 
-static uint32_t shot_cooldown_us = 40000;
+
+static uint32_t shot_cooldown_us = 250000; // 250ms 
 
 /* UI flags */
 static bool menu_drawn = false;
@@ -49,6 +52,7 @@ void game_init(void) {
 
     srand(time_us_64());
     last_shot_time = get_absolute_time();
+    last_frame_time = get_absolute_time();
 
     for(int i=0;i<MAX_BULLETS;i++)
         bullets[i].active = false;
@@ -64,6 +68,13 @@ void game_init(void) {
    ======================= */
 void game_update(int move_dir, int fire) {
     absolute_time_t now = get_absolute_time();
+
+    // Prüfen: Ist der Frame-Intervall noch nicht vorbei? Dann skippen
+    if (absolute_time_diff_us(last_frame_time, now) < FRAME_INTERVAL_US)
+        return;
+
+    // Zeit aktualisieren
+    last_frame_time = now;
 
     /* ---------- GAME OVER ---------- */
     if (get_state() == GAMESTATE_GAME_OVER) {
@@ -92,6 +103,7 @@ void game_update(int move_dir, int fire) {
 
     /* ---------- PLAYING ---------- */
     /* Player movement */
+    int prev_player_x = player_x;
     player_x += move_dir * 4;
     if (player_x < 0) player_x = 0;
     if (player_x > SCREEN_WIDTH - PLAYER_WIDTH)
@@ -132,7 +144,11 @@ void game_update(int move_dir, int fire) {
     }
 
     /* ---------- Render ---------- */
-    st7735_fill_screen(st7735_rgb(0,0,0));
+    // vorherige Position des Spielers löschen
+    st7735_fill_rect(prev_player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(0,0,0));
+    // neue Position zeichnen
+    st7735_fill_rect(player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(255,255,255));
+    prev_player_x = player_x;
 
     /* Draw player */
     st7735_fill_rect(player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(255,255,255));
