@@ -114,16 +114,26 @@ void game_init(void)
    ======================= */
 void game_update(int move_dir, int fire)
 {
-    if (get_state() != GAMESTATE_PLAYING)
-        return;
-    else if (get_state() == GAMESTATE_GAME_OVER) {
-    draw_game_over_screen();
+    /* ---------- GAME OVER ---------- */
+    if (get_state() == GAMESTATE_GAME_OVER) {
+        draw_game_over_screen();
+
         if (move_dir < 0) { // LEFT gedrückt
-                game_init();               // reset Game
-                set_state(GAMESTATE_PLAYING);
-            }
+            game_init();              // zurück ins Menü
+            set_state(GAMESTATE_MENU);
+        }
         return;
-}
+    }
+
+    /* ---------- MENU ---------- */
+    if (get_state() == GAMESTATE_MENU) {
+
+        if (move_dir < 0) { // LEFT = Start
+            st7735_fill_screen(st7735_rgb(0, 0, 0));
+            set_state(GAMESTATE_PLAYING);
+        }
+        return;
+    }
 
     absolute_time_t now = get_absolute_time();
 
