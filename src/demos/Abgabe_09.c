@@ -3,6 +3,8 @@
 #include "hardware/gpio.h"
 #include "game/game.h"
 #include "game/gamestate.h"
+#include "hal/controls/joystick.h"
+#include "demos/joystick.h"
 
 #define LEFT_BUTTON_PIN   15
 #define BOTTOM_BUTTON_PIN 14
@@ -11,6 +13,10 @@
 
 void abgabe_09_execute(void)
 {
+    joystick_init_simple_center();
+    joystick_event_t event;
+
+
     gpio_init_mask(
         (1<<LEFT_BUTTON_PIN) |
         (1<<RIGHT_BUTTON_PIN) |
@@ -30,8 +36,13 @@ void abgabe_09_execute(void)
 
     while (true)
     {
+        joystick_read(&event);
+
         int move = 0;
         int fire = 0;
+
+        if (event.x_norm < -0.5f) move = 1;
+        if (event.x_norm >  0.5f) move =  -1;
 
         if (!gpio_get(LEFT_BUTTON_PIN))  move = -1;
         if (!gpio_get(RIGHT_BUTTON_PIN)) move =  1;
