@@ -52,6 +52,7 @@ src/demos/Abgabe_09.c
 src/game/game.c
 src/game/gamestate.c
 src/game/enemies.c
+src/game/handling.c
 )
 
 pico_set_program_name(pico2-edu "pico2-edu")

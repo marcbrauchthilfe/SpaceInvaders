@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include "include/demos/Abgabe_09.h"
 #include "game/game.h"
+#include "game/handling.h"
 
 int main(void)
 {
@@ -9,7 +10,7 @@ int main(void)
     sleep_ms(2000); // Zeit für USB-Serial
 
     game_init();       // Display + Startmenü
-    abgabe_09_execute(); // Game-Loop (läuft endlos)
+    handling_execute(); // Game-Loop (läuft endlos)
 
     // Wird nie erreicht
     while (true) {  
