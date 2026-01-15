@@ -12,7 +12,7 @@ int main(void)
     abgabe_09_execute(); // Game-Loop (läuft endlos)
 
     // Wird nie erreicht
-    while (true) {
+    while (true) {  
         tight_loop_contents();
     }
 }

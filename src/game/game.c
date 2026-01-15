@@ -5,34 +5,12 @@
 #include "pico/time.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include "game/enemies.h"
 
 #define SCREEN_WIDTH 128
 #define PLAYER_Y     150
 #define PLAYER_WIDTH 10
-
-#define ENEMY_ROWS 3
-#define ENEMY_COLS 6
-#define MAX_ENEMIES (ENEMY_ROWS * ENEMY_COLS)
 #define MAX_BULLETS 5
-#define MAX_ENEMY_BULLETS 5
-
-/* =======================
-   Enemy structure
-   ======================= */
-typedef struct {
-    int x;
-    int y;
-    bool alive;
-} Enemy;
-
-/* =======================
-   Enemy Bullet structure
-   ======================= */
-typedef struct {
-    int x;
-    int y;
-    bool active;
-} EnemyBullet;
 
 /* =======================
    Bullet structure
@@ -46,22 +24,12 @@ typedef struct {
 /* =======================
    Game state variables
    ======================= */
-static Enemy enemies[MAX_ENEMIES];
-
 static int player_x = 60;
 
 /* Shooting */
 static absolute_time_t last_shot_time;
 static uint32_t shot_cooldown_us = 40000;
 static Bullet bullets[MAX_BULLETS];
-
-/* Enemy */
-static int enemy_dir = 1;
-static absolute_time_t last_enemy_move;
-static uint32_t enemy_move_interval = 300000;
-static EnemyBullet enemy_bullets[MAX_ENEMY_BULLETS];
-static absolute_time_t last_enemy_shot;
-static uint32_t enemy_shot_interval_us = 800000; // 0.8s
 
 /*funktion init*/
 static void draw_game_over_screen(void);
@@ -89,24 +57,8 @@ void game_init(void)
 
     /* Init timers */
     last_shot_time = get_absolute_time();
-    last_enemy_move = get_absolute_time();
 
-
-    /* Init enemies */
-    int index = 0;
-    for (int row = 0; row < ENEMY_ROWS; row++) {
-        for (int col = 0; col < ENEMY_COLS; col++) {
-            enemies[index].x = 10 + col * 18;
-            enemies[index].y = 20 + row * 15;
-            enemies[index].alive = true;
-            index++;
-        }
-    }
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-    enemy_bullets[i].active = false;
-    }
-    last_enemy_shot = get_absolute_time();
-
+    enemies_init();
 }
 
 /* =======================
@@ -149,31 +101,6 @@ void game_update(int move_dir, int fire)
             }
         }
     }
-    
-    /* -------- Enemy movement -------- */
-    if (absolute_time_diff_us(last_enemy_move, now) >= enemy_move_interval) {
-
-        bool edge_hit = false;
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!enemies[i].alive) continue;
-
-            enemies[i].x += enemy_dir * 2;
-
-            if (enemies[i].x <= 0 || enemies[i].x >= SCREEN_WIDTH - 10) {
-                edge_hit = true;
-            }
-        }
-
-        if (edge_hit) {
-            enemy_dir *= -1;
-            for (int i = 0; i < MAX_ENEMIES; i++) {
-                enemies[i].y += 5;
-            }
-        }
-
-        last_enemy_move = now;
-    }
 
     /* -------- Bullet movement -------- */
     for (int i = 0; i < MAX_BULLETS; i++) {
@@ -186,77 +113,10 @@ void game_update(int move_dir, int fire)
         }
     }
 
-    /* -------- Enemy Shooting -------- */
-    if (absolute_time_diff_us(last_enemy_shot, now) >= enemy_shot_interval_us) {
-
-        /* zufälligen lebenden Gegner wählen */
-        int shooter = -1;
-        for (int tries = 0; tries < 10; tries++) {
-            int i = rand() % MAX_ENEMIES;
-            if (enemies[i].alive) {
-                shooter = i;
-                break;
-            }
-        }
-
-        if (shooter >= 0) {
-            for (int b = 0; b < MAX_ENEMY_BULLETS; b++) {
-                if (!enemy_bullets[b].active) {
-                    enemy_bullets[b].x = enemies[shooter].x + 5;
-                    enemy_bullets[b].y = enemies[shooter].y + 6;
-                    enemy_bullets[b].active = true;
-                    last_enemy_shot = now;
-                    break;
-                }
-            }
-        }
-    }
-
-
-
     /* -------- Collision detection -------- */
-   for (int b = 0; b < MAX_BULLETS; b++) {
-        if (!bullets[b].active) continue;
-
-        for (int e = 0; e < MAX_ENEMIES; e++) {
-            if (!enemies[e].alive) continue;
-
-            if (bullets[b].x >= enemies[e].x &&
-                bullets[b].x <= enemies[e].x + 10 &&
-                bullets[b].y >= enemies[e].y &&
-                bullets[b].y <= enemies[e].y + 8) {
-
-                enemies[e].alive = false;
-                bullets[b].active = false;
-                break;
-            }
-        }
-    }
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-        if (!enemy_bullets[i].active) continue;
-
-        if (enemy_bullets[i].x >= player_x &&
-            enemy_bullets[i].x <= player_x + PLAYER_WIDTH &&
-            enemy_bullets[i].y >= PLAYER_Y &&
-            enemy_bullets[i].y <= PLAYER_Y + 5) {
-
-            enemy_bullets[i].active = false;
-
-            /* TODO: Leben abziehen / Game Over */
-            set_state(GAMESTATE_GAME_OVER);
-        }
-    }
-
-
-    /* -------- Enemy Bullet movement -------- */
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-        if (!enemy_bullets[i].active) continue;
-
-        enemy_bullets[i].y += 4;
-
-        if (enemy_bullets[i].y > 160) {
-            enemy_bullets[i].active = false;
-        }
+    enemies_check_bullet_hits(player_x, PLAYER_Y, &bullets->active);
+    if (enemies_player_hit(player_x, PLAYER_Y, PLAYER_WIDTH)) {
+        set_state(GAMESTATE_GAME_OVER);
     }
 
     /* -------- Render -------- */
@@ -276,30 +136,6 @@ void game_update(int move_dir, int fire)
                 2, 6,
                 st7735_rgb(255, 0, 0)
             );
-        }
-    }
-
-    /* Enemy Bullets */
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-        if (enemy_bullets[i].active) {
-            st7735_fill_rect(
-                enemy_bullets[i].x,
-                enemy_bullets[i].y,
-                2, 6,
-                st7735_rgb(255, 255, 0)
-            );
-        }
-    }
-
-
-
-    /* Enemies */
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (enemies[i].alive) {
-            st7735_fill_rect(enemies[i].x,
-                             enemies[i].y,
-                             10, 6,
-                             st7735_rgb(0, 255, 0));
         }
     }
 }
