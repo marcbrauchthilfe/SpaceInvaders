@@ -12,152 +12,98 @@
 #define PLAYER_WIDTH 10
 #define MAX_BULLETS 5
 
-/* =======================
-   Bullet structure
-   ======================= */
 typedef struct {
-    int x;
-    int y;
+    int x, y;
     bool active;
 } Bullet;
 
-/* =======================
-   Game state variables
-   ======================= */
 static int player_x = 60;
-
-/* Shooting */
+static Bullet bullets[MAX_BULLETS];
 static absolute_time_t last_shot_time;
 static uint32_t shot_cooldown_us = 40000;
-static Bullet bullets[MAX_BULLETS];
 
-/*funktion init*/
-static void draw_game_over_screen(void);
+static void draw_game_over_screen(void) {
+    st7735_fill_screen(st7735_rgb(0,0,0));
+    st7735_draw_string(30,40,"GAME OVER", st7735_rgb(255,0,0), st7735_rgb(0,0,0));
+    st7735_draw_string(10,70,"LEFT = RESTART", st7735_rgb(255,255,255), st7735_rgb(0,0,0));
+}
 
-/* =======================
-   Game Init
-   ======================= */
-void game_init(void)
-{
+void game_init(void) {
     init_display();
     st7735_begin();
-
-    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    enemies_init();
+    st7735_fill_screen(st7735_rgb(0,0,0));
 
     set_state(GAMESTATE_MENU);
-    st7735_draw_string(20, 40, "> SPACE INVADERS",
-                       st7735_rgb(255, 255, 255),
-                       st7735_rgb(0, 0, 0));
+    st7735_draw_string(20,40,"> SPACE INVADERS", st7735_rgb(255,255,255), st7735_rgb(0,0,0));
+    st7735_draw_string(20,60,"> LEFT = START", st7735_rgb(255,255,255), st7735_rgb(0,0,0));
 
-    st7735_draw_string(20, 60, "> LEFT = START",
-                       st7735_rgb(255, 255, 255),
-                       st7735_rgb(0, 0, 0));
-
-    srand(time_us_64()); // Seed mit aktueller Zeit                   
-
-    /* Init timers */
+    srand(time_us_64());
     last_shot_time = get_absolute_time();
 
-    enemies_init();
+    for(int i=0;i<MAX_BULLETS;i++) bullets[i].active = false;
 }
 
-/* =======================
-   Game Update
-   ======================= */
-void game_update(int move_dir, int fire)
-{
-    if (get_state() != GAMESTATE_PLAYING)
+void game_update(int move_dir, int fire) {
+    if (get_state() == GAMESTATE_GAME_OVER) {
+        draw_game_over_screen();
+        if (move_dir < 0) game_init();
         return;
-    else if (get_state() == GAMESTATE_GAME_OVER) {
-    draw_game_over_screen();
-        if (move_dir < 0) { // LEFT gedrückt
-                game_init();               // reset Game
-                set_state(GAMESTATE_PLAYING);
-            }
+    }
+
+    if (get_state() == GAMESTATE_MENU) {
+        if (move_dir < 0) set_state(GAMESTATE_PLAYING);
         return;
-}
+    }
 
-    absolute_time_t now = get_absolute_time();
-
-    /* -------- Player movement -------- */
+    /* Player movement */
     player_x += move_dir * 4;
-    if (player_x < 0)
-        player_x = 0;
-    if (player_x > SCREEN_WIDTH - PLAYER_WIDTH)
-        player_x = SCREEN_WIDTH - PLAYER_WIDTH;
+    if (player_x < 0) player_x = 0;
+    if (player_x > SCREEN_WIDTH - PLAYER_WIDTH) player_x = SCREEN_WIDTH - PLAYER_WIDTH;
 
-    /* -------- Shooting -------- */
-    if (fire) {
-        if (absolute_time_diff_us(last_shot_time, now) >= shot_cooldown_us) {
-
-            for (int i = 0; i < MAX_BULLETS; i++) {
-                if (!bullets[i].active) {
-                    bullets[i].x = player_x + PLAYER_WIDTH / 2;
-                    bullets[i].y = PLAYER_Y - 6;
-                    bullets[i].active = true;
-                    last_shot_time = now;
-                    break;
-                }
+    /* Shooting */
+    absolute_time_t now = get_absolute_time();
+    if (fire && absolute_time_diff_us(last_shot_time, now) >= shot_cooldown_us) {
+        for (int i=0;i<MAX_BULLETS;i++) {
+            if(!bullets[i].active){
+                bullets[i].x = player_x + PLAYER_WIDTH/2;
+                bullets[i].y = PLAYER_Y - 6;
+                bullets[i].active = true;
+                last_shot_time = now;
+                break;
             }
         }
     }
 
-    /* -------- Bullet movement -------- */
-    for (int i = 0; i < MAX_BULLETS; i++) {
-        if (!bullets[i].active) continue;
-
+    /* Move bullets */
+    for(int i=0;i<MAX_BULLETS;i++){
+        if(!bullets[i].active) continue;
         bullets[i].y -= 5;
-
-        if (bullets[i].y < 0) {
-            bullets[i].active = false;
-        }
+        if(bullets[i].y < 0) bullets[i].active = false;
     }
 
-    /* -------- Collision detection -------- */
-    enemies_check_bullet_hits(player_x, PLAYER_Y, &bullets->active);
-    if (enemies_player_hit(player_x, PLAYER_Y, PLAYER_WIDTH)) {
+    /* Update enemies & bullets */
+    enemies_update();
+
+    /* Check bullet collisions with enemies */
+    for(int i=0;i<MAX_BULLETS;i++){
+        if(bullets[i].active)
+            enemies_check_bullet_hits(bullets[i].x, bullets[i].y, &bullets[i].active);
+    }
+
+    /* Check if player is hit */
+    if(enemies_check_player_hit(player_x, PLAYER_Y, PLAYER_WIDTH, 5)) {
         set_state(GAMESTATE_GAME_OVER);
     }
 
-    /* -------- Render -------- */
-    st7735_fill_screen(st7735_rgb(0, 0, 0));
+    /* Render */
+    st7735_fill_screen(st7735_rgb(0,0,0));
+    st7735_fill_rect(player_x, PLAYER_Y, PLAYER_WIDTH, 5, st7735_rgb(255,255,255));
 
-    /* Player */
-    st7735_fill_rect(player_x, PLAYER_Y,
-                     PLAYER_WIDTH, 5,
-                     st7735_rgb(255, 255, 255));
-
-    /* Bullet */
-    for (int i = 0; i < MAX_BULLETS; i++) {
-        if (bullets[i].active) {
-            st7735_fill_rect(
-                bullets[i].x,
-                bullets[i].y,
-                2, 6,
-                st7735_rgb(255, 0, 0)
-            );
-        }
+    for(int i=0;i<MAX_BULLETS;i++){
+        if(bullets[i].active)
+            st7735_fill_rect(bullets[i].x, bullets[i].y, 2, 6, st7735_rgb(255,0,0));
     }
-}
 
-/* =======================
-   Draw Game Over Screen
-   ======================= */
-static void draw_game_over_screen(void)
-{
-    st7735_fill_screen(st7735_rgb(0, 0, 0));
-
-    st7735_draw_string(
-        30, 40,
-        "GAME OVER",
-        st7735_rgb(255, 0, 0),
-        st7735_rgb(0, 0, 0)
-    );
-
-    st7735_draw_string(
-        10, 70,
-        "LEFT = RESTART",
-        st7735_rgb(255, 255, 255),
-        st7735_rgb(0, 0, 0)
-    );
+    enemies_draw();
 }
