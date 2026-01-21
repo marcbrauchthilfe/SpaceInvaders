@@ -27,6 +27,11 @@ static absolute_time_t last_enemy_move;
 static absolute_time_t last_enemy_shot;
 static uint32_t enemy_move_interval = 300000;
 static uint32_t enemy_shot_interval_us = 800000;
+static int current_wave = 1;
+static int score = 0;
+static int enemy_speed = 1;
+static int enemy_shoot_delay = 2000;
+
 
 void enemies_init(void) {
     int index = 0;
@@ -134,4 +139,31 @@ bool enemies_check_player_hit(int player_x, int player_y, int player_width, int 
         }
     }
     return false;
+
 }
+bool enemies_all_dead(void) {
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (enemies[i].alive) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void enemies_spawn_wave(int wave) {
+    enemy_speed = 1 + wave;          // schneller
+    enemy_shoot_delay = 2000 - wave * 150; // aggressiver
+    if (enemy_shoot_delay < 400) enemy_shoot_delay = 400;
+
+    int index = 0;
+    for (int row = 0; row < ENEMY_ROWS; row++) {
+        for (int col = 0; col < ENEMY_COLS; col++) {
+            enemies[index].x = 10 + col * 18;
+            enemies[index].y = 20 + row * 15;
+            enemies[index].alive = true;
+            index++;
+        }
+    }
+}
+
+

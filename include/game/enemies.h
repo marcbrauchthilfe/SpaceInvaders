@@ -18,4 +18,10 @@ void enemies_check_bullet_hits(int bullet_x, int bullet_y, bool* bullet_active);
 /* Check if player is hit by enemy bullets */
 bool enemies_check_player_hit(int player_x, int player_y, int player_width, int player_height);
 
+/* Check if all enemies are dead */
+bool enemies_all_dead(void);
+
+/* Spawn a new wave of enemies */
+void enemies_spawn_wave(int wave);
+
 #endif /* ENEMIES_H */

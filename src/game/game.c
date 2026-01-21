@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "game/enemies.h"
+#include <stdio.h>
 
 #define SCREEN_WIDTH 128
 #define PLAYER_Y     150
@@ -25,6 +26,8 @@ static Bullet bullets[MAX_BULLETS];
 static absolute_time_t last_shot_time;
 static absolute_time_t last_enemy_move;
 static absolute_time_t last_enemy_shot;
+
+static int current_wave = 1;
 
 static uint32_t shot_cooldown_us = 40000;
 
@@ -96,6 +99,12 @@ void game_update(int move_dir, int fire) {
     if (player_x < 0) player_x = 0;
     if (player_x > SCREEN_WIDTH - PLAYER_WIDTH)
         player_x = SCREEN_WIDTH - PLAYER_WIDTH;
+
+    if (enemies_all_dead()) {
+    current_wave++;
+    sleep_ms(800);              // kleine Pause
+    enemies_spawn_wave(current_wave);
+    }
 
     /* Player shooting */
     if (fire && absolute_time_diff_us(last_shot_time, now) >= shot_cooldown_us) {
